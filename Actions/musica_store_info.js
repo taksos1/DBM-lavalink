@@ -45,6 +45,8 @@ module.exports = {
             dataType = "String";
         } else if (data.info === "manager") {
             dataType = "Object";
+        } else if (data.info === "filters") {
+            dataType = "String";
         }
         return [data.varName2, dataType];
     },
@@ -83,6 +85,7 @@ module.exports = {
                     <option value="guild">Player Guild</option>
                     <option value="id">Player ID</option>
                     <option value="manager">Player Manager</option>
+                    <option value="filters">Active Filters</option>
                 </select>
             </div><br><br><br><br><br>
   
@@ -100,7 +103,21 @@ module.exports = {
             const varName2 = this.evalMessage(data.varName2, cache);
   
             let valueToStore;
-            if (info === "loop") {
+            if (info === "filters") {
+                const activeFilters = [];
+                if (player.filters) {
+                    if (player.filters.bassboost) activeFilters.push("Bass Boost");
+                    if (player.filters.eightD) activeFilters.push("8D");
+                    if (player.filters.nightcore) activeFilters.push("Nightcore");
+                    if (player.filters.vaporwave) activeFilters.push("Vaporwave");
+                    if (player.filters.earrape) activeFilters.push("Earrape");
+                    if (player.filters.chipmunk) activeFilters.push("Chipmunk");
+                    if (player.filters.darthvader) activeFilters.push("Darth Vader");
+                    if (player.filters.party) activeFilters.push("Party");
+                    if (player.filters.radio) activeFilters.push("Radio");
+                }
+                valueToStore = activeFilters.length > 0 ? activeFilters.join('\n') : 'None';
+            } else if (info === "loop") {
                 const isTrackLooping = player.trackRepeat ?? false;
                 const isQueueLooping = player.queueRepeat ?? false;
   
@@ -161,9 +178,9 @@ module.exports = {
   
         this.callNextAction(cache);
     },
-  };
-  
-  function getValue(obj, expr) {
+};
+
+function getValue(obj, expr) {
     if (!obj || typeof obj !== 'object' || !expr || typeof expr !== 'string') return undefined;
   
     try {
@@ -171,4 +188,4 @@ module.exports = {
     } catch (e) {
         return undefined;
     }
-  }
+}

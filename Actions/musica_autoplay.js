@@ -96,7 +96,6 @@ module.exports = {
     player.autoplayMode = autoplayMode;
     player.maxHistorySize = maxHistorySize;
 
-    // Enhanced text cleaning with improved language detection
     const cleanText = (text) => {
       const cleaned = text
         .replace(/(official|video|audio|lyrics|music|hd|mv|performance|live|[0-9]+\s*(k|m)?\s*views?)/gi, "")
@@ -105,14 +104,13 @@ module.exports = {
         .replace(/\s+/g, " ")
         .trim();
       
-      // Expanded language detection
       const scripts = {
         ko: /[\uAC00-\uD7AF]/,
         ja: /[\u3040-\u30FF\u31F0-\u31FF]/,
         zh: /[\u4E00-\u9FFF]/,
         th: /[\u0E00-\u0E7F]/,
         ar: /[\u0600-\u06FF]/,
-        hi: /[\u0900-\u097F]/
+        hi: /[\u0900-\u097F]/,
       };
       
       for (const [lang, regex] of Object.entries(scripts)) {
@@ -122,7 +120,6 @@ module.exports = {
       return { text: cleaned, language: "en" };
     };
 
-    // Improved platform-specific artist search with pagination
     const searchArtistTracks = async (platform, artistName, offset = 0) => {
       const searchQuery = platform === "spotify" 
         ? `artist:${artistName}`
@@ -136,7 +133,6 @@ module.exports = {
       }
     };
 
-    // Enhanced genre detection with sub-genres and weighted scoring
     const detectGenre = (track) => {
       const title = track.title.toLowerCase();
       const genres = {
@@ -145,7 +141,7 @@ module.exports = {
           patterns: [
             /(edm|electronic)/i,
             /(house|techno|trance)/i,
-            /(dubstep|drum\s*&*\s*bass|dnb)/i
+            /(dubstep|drum\s*&*\s*bass|dnb)/i,
           ]
         },
         rock: {
@@ -153,7 +149,7 @@ module.exports = {
           patterns: [
             /(rock|metal)/i,
             /(punk|grunge|alternative)/i,
-            /(indie|progressive)/i
+            /(indie|progressive)/i,
           ]
         },
         hiphop: {
@@ -161,10 +157,9 @@ module.exports = {
           patterns: [
             /(hip\s*hop|rap)/i,
             /(trap|drill)/i,
-            /(boom\s*bap|rhythmic)/i
+            /(boom\s*bap|rhythmic)/i,
           ]
         },
-        // Add more genres as needed
       };
 
       let maxScore = 0;
@@ -187,7 +182,6 @@ module.exports = {
       const clean1 = cleanText(track1.title);
       const clean2 = cleanText(track2.title);
       
-      // Check for very similar titles (possible duplicates with different URLs)
       const similarity = (str1, str2) => {
         if (Math.abs(str1.length - str2.length) > 5) return false;
         const set1 = new Set(str1.split(" "));
@@ -208,10 +202,8 @@ module.exports = {
         const { text: cleanedTitle, language } = cleanText(currentTrack.title);
         const { genre, confidence } = detectGenre(currentTrack);
 
-        // Add current track to history
         player.playHistory.add(currentTrack.uri);
         
-        // Maintain history size
         if (player.playHistory.size > player.maxHistorySize) {
           const [firstItem] = player.playHistory;
           player.playHistory.delete(firstItem);
@@ -219,10 +211,9 @@ module.exports = {
 
         switch (autoplayMode) {
           case "artist": {
-            // Get multiple pages of results for better variety
-            const pages = await Promise.all([
+            const pages = await Promise.all([ 
               searchArtistTracks(platform, currentTrack.author, 0),
-              searchArtistTracks(platform, currentTrack.author, 1)
+              searchArtistTracks(platform, currentTrack.author, 1),
             ]);
             
             const allTracks = pages.filter(Boolean)
@@ -238,23 +229,18 @@ module.exports = {
           }
 
           case "mix": {
-            // Smart mix using genre, language, and mood
             const keywords = [
               genre !== "unknown" ? genre : "",
               language === "en" ? "" : `${language} music`,
-              // Add mood keywords based on title analysis
               currentTrack.title.toLowerCase().includes("happy") ? "upbeat" : "",
-              currentTrack.title.toLowerCase().includes("sad") ? "melancholic" : ""
+              currentTrack.title.toLowerCase().includes("sad") ? "melancholic" : "",
             ].filter(Boolean);
 
-            searchResults = await client.manager.search(
-              `${keywords.join(" ")} ${cleanedTitle}`
-            );
+            searchResults = await client.manager.search(`${keywords.join(" ")} ${cleanedTitle}`);
             break;
           }
 
           default: {
-            // Enhanced similar tracks search
             const genreKeyword = genre !== "unknown" ? genre : "";
             const searchQuery = language === "en" 
               ? `${genreKeyword} ${cleanedTitle}`
@@ -265,7 +251,6 @@ module.exports = {
         }
 
         if (searchResults?.tracks?.length > 0) {
-          // Filter out history and duplicates
           const validTracks = searchResults.tracks.filter(track => 
             track &&
             !player.playHistory.has(track.uri) &&
@@ -274,7 +259,6 @@ module.exports = {
           );
 
           if (validTracks.length === 0) {
-            // If no valid tracks found, clear some history and try again
             const historyArray = Array.from(player.playHistory);
             const halfHistory = Math.floor(player.maxHistorySize / 2);
             for (let i = 0; i < halfHistory && i < historyArray.length; i++) {
@@ -283,7 +267,6 @@ module.exports = {
             return getRelatedTracks(currentTrack);
           }
 
-          // Score and select tracks
           const scoredTracks = validTracks.map(track => {
             const trackInfo = cleanText(track.title);
             const trackGenre = detectGenre(track);
@@ -298,7 +281,6 @@ module.exports = {
 
           scoredTracks.sort((a, b) => b.score - a.score);
           
-          // Select a track randomly from top matches
           const topN = Math.min(5, scoredTracks.length);
           const selectedTrack = scoredTracks[Math.floor(Math.random() * topN)].track;
           
@@ -314,23 +296,36 @@ module.exports = {
 
     const autoplayHandler = async () => {
       if (!player.autoplay) return;
-
-      const currentTrack = player.queue.current || player.queue.previous;
-      if (!currentTrack) return;
-
-      const nextTrack = await getRelatedTracks(currentTrack);
-
-      if (nextTrack) {
-        console.log(`[Autoplay] Adding: ${nextTrack.title} (${autoplayMode} mode)`);
-        player.queue.add(nextTrack);
-
-        if (!player.playing && !player.paused && !player.queue.size) {
-          player.play();
+    
+      const addNextTrack = async () => {
+        const currentTrack = player.queue.current || player.queue.previous;
+        if (!currentTrack) return;
+    
+        const nextTrack = await getRelatedTracks(currentTrack);
+    
+        if (nextTrack) {
+          console.log(`[Autoplay] Adding: ${nextTrack.title} (${autoplayMode} mode)`);
+          player.queue.add(nextTrack);
+    
+          if (!player.playing && !player.paused && !player.queue.size) {
+            player.play();
+          }
         }
+      };
+    
+      setInterval(() => {
+        if (player.queue.size === 0) {
+          addNextTrack();
+        }
+      }, 1000);
+    };
+
+    const handler = (currentPlayer) => {
+      if (currentPlayer.guild === targetServer.id && player.autoplay) {
+        autoplayHandler();
       }
     };
 
-    // Cleanup and setup event handlers
     if (!client.autoplayHandlers) {
       client.autoplayHandlers = new Map();
     }
@@ -341,28 +336,24 @@ module.exports = {
     }
 
     if (toggle) {
-      const handler = (currentPlayer) => {
-        if (currentPlayer.guild === targetServer.id) {
-          autoplayHandler();
-        }
-      };
-
       client.manager.on("trackEnd", handler);
       client.autoplayHandlers.set(targetServer.id, handler);
-
+    
       if (!player.queue.size) {
         autoplayHandler();
       }
+    } else {
+      client.manager.off("trackEnd", handler);
+      player.autoplay = false;
     }
 
     const varName = this.evalMessage(data.varName, cache);
     const storage = parseInt(data.storageType);
     this.storeValue(toggle, storage, varName, cache);
-
+    
     this.callNextAction(cache);
   },
 
   mod() {
-    console.log("Enhanced Autoplay Action loaded successfully.");
   },
 };
