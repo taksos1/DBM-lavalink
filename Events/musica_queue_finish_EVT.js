@@ -1,8 +1,10 @@
+const { Manager } = require('magmastream');
+
 module.exports = {
   name: 'Queue Finished',
   isEvent: true,
 
-  fields: ['Temp Variable Name (stores player data):'],
+  fields: [],
 
   mod(DBM) {
     DBM.Events = DBM.Events || {};
@@ -10,20 +12,12 @@ module.exports = {
 
     DBM.Events.queueFinish = function queueFinish(player) {
       if (!Bot.$evts['Queue Finished']) return;
-      const server = Bot.bot.guilds.cache.get(player.guild);
+      
+      const server = Bot.bot.guilds.cache.get(player.guildId);
       if (!server) return;
 
       for (const event of Bot.$evts['Queue Finished']) {
-        const temp = {};
-        if (event.temp) temp[event.temp] = {
-          guildId: player.guild,
-          textChannelId: player.textChannel,
-          voiceChannelId: player.voiceChannel,
-          totalPlayedTracks: player.queue.string ? player.queue.string.split('\n').length : 0,
-          lastVolume: player.volume,
-          disconnectReason: 'queue_finish'
-        };
-        Actions.invokeEvent(event, server, temp);
+        Actions.invokeEvent(event, server);
       }
     };
 
