@@ -6,7 +6,6 @@ module.exports = {
     version: "2.1.7",
     preciseCheck: true,
     author: "Taksos",
-    
   },
   fields: ["song", "queuePosition"],
   subtitle(data) {
@@ -65,12 +64,13 @@ module.exports = {
 
       if (!player) {
         player = client.manager.create({
-          guild: targetServer.id,
-          textChannel: cache.msg?.channel?.id || "",
-          voiceChannel: member.voice.channel.id,
-          selfDeafen: true,
-          volume: 10,
-        });
+  		guildId: targetServer.id,
+  		textChannelId: cache.msg?.channel?.id || "",
+  		voiceChannelId: member.voice.channel.id,
+  		selfDeafen: true,
+  		volume: 10,
+		});
+
 
         // Apply optimized settings if MagmaStream is available
         if (player.node?.options) {
@@ -79,9 +79,11 @@ module.exports = {
           player.node.options.smoothTransition = true;
         }
       } else {
-        const textChannelId = cache.msg?.channel?.id;
-        if (textChannelId) player.setTextChannel(textChannelId);
-        player.setVoiceChannel(member.voice.channel.id);
+        // Update channels directly on player object
+        if (cache.msg?.channel?.id) {
+          player.textChannel = cache.msg.channel.id;
+        }
+        player.voiceChannel = member.voice.channel.id;
       }
 
       await player.connect();
