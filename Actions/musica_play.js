@@ -1,3 +1,107 @@
+const searchSong = async (client, song, member) => {
+  try {
+    const res = await client.manager.search(song, member.user);
+    
+    if (res.loadType === "empty" || res.loadType === "error") {
+      console.error("Could not find the song");
+      return null;
+    }
+
+    return res;
+  } catch (error) {
+    console.error("Error searching for song:", error);
+    return null;
+  }
+};
+
+const getOrCreatePlayer = async (client, targetServer, member, cache) => {
+  try {
+    let player = client.manager.get(targetServer.id);
+
+    if (!player) {
+      player = client.manager.create({
+        guildId: targetServer.id,
+        textChannelId: cache.msg?.channel?.id || "",
+        voiceChannelId: member.voice.channel.id,
+        selfDeafen: true,
+        volume: 4,
+      });
+
+      // Optimize player settings for Magmastream 2.8
+      if (player.node?.options) {
+        player.node.options.transport = "rest"; // Updated for Magmastream 2.8
+        player.node.options.bufferDuration = 400;
+        player.node.options.frameBufferSize = 4000;
+        player.node.options.nullBufferTimeout = 5000;
+      }
+    } else {
+      player.textChannel = cache.msg?.channel?.id || player.textChannel;
+      player.voiceChannel = member.voice.channel.id;
+    }
+
+    await player.connect();
+    return player;
+  } catch (error) {
+    console.error("Error creating/getting player:", error);
+    return null;
+  }
+};
+
+const handlePlaylist = async (player, searchResult, originalSong, addTrackToQueue) => {
+  const safeUrl = originalSong.replace(/[<>]/g, '');
+  player.queue.string += `Playlist: [${searchResult.playlist.name}](${safeUrl})\n`;
+  
+  const batchSize = 50;
+  for (let i = 0; i < searchResult.playlist.tracks.length; i += batchSize) {
+    const batch = searchResult.playlist.tracks.slice(i, i + batchSize);
+    batch.forEach(addTrackToQueue);
+    if (i + batchSize < searchResult.playlist.tracks.length) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+  }
+};
+
+const handleSingleTrack = (player, searchResult, addTrackToQueue) => {
+  const track = searchResult.tracks[0];
+  const safeUrl = track.uri.replace(/[<>]/g, '');
+  player.queue.string += `[${track.title}](${safeUrl})\n`;
+  addTrackToQueue(track);
+};
+
+const handleQueueAndPlay = async (player, searchResult, queuePosition, originalSong) => {
+  try {
+    if (!player.queue.string) {
+      player.queue.string = "";
+    }
+
+    const addTrackToQueue = (track) => {
+      if (queuePosition === "start") {
+        player.queue.unshift(track);
+      } else {
+        player.queue.add(track);
+      }
+    };
+
+    if (searchResult.loadType === "playlist") {
+      await handlePlaylist(player, searchResult, originalSong, addTrackToQueue);
+    } else {
+      handleSingleTrack(player, searchResult, addTrackToQueue);
+    }
+
+    if (queuePosition === "instant") {
+      player.queue.shift();
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      await player.play(searchResult.tracks[0]);
+    } else if (!player.playing && !player.paused) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      await player.play();
+    }
+
+  } catch (error) {
+    console.error("Error handling queue and play:", error);
+  }
+};
+
 module.exports = {
   name: "playMusic",
   displayName: "Play Music",
@@ -8,19 +112,21 @@ module.exports = {
     author: "Taksos",
   },
   fields: ["song", "queuePosition"],
+  
   subtitle(data) {
     const position = data.queuePosition || "end";
-    let positionText = "Add to End of Queue";
-    if (position === "instant") {
-      positionText = "Play Instantly";
-    } else if (position === "start") {
-      positionText = "Add to Beginning of Queue";
-    }
-    return `Play ${data.song} - ${positionText}`;
+    const positionMap = {
+      instant: "Play Instantly",
+      start: "Add to Beginning of Queue",
+      end: "Add to End of Queue"
+    };
+    return `Play ${data.song} - ${positionMap[position]}`;
   },
+
   variableStorage(data, varType) {
     return ``;
   },
+
   html(isEvent, data) {
     return `
       <div style="float: left; width: 60%;">
@@ -37,93 +143,31 @@ module.exports = {
       </div>
     `;
   },
+
   init() {},
+
   async action(cache) {
     const data = cache.actions[cache.index];
-    const link = this.evalMessage(data.song, cache);
-    const song = link.includes("&") ? link.split("&")[0] : link;
-    const queuePosition = this.evalMessage(data.queuePosition, cache);
     const client = this.getDBM().Bot.bot;
-    const targetServer = await this.getServerFromData(0, null, cache);
-    const member = await this.getMemberFromData(1, null, cache);
-
-    if (!member?.voice?.channel) {
-      console.error("User is not in a voice channel or member data is invalid.");
-      return this.callNextAction(cache);
-    }
 
     try {
-      const res = await client.manager.search(song, member.user);
-      
-      if (res.loadType === "empty" || res.loadType === "error") {
-        console.error("Could not find the song");
+      const link = this.evalMessage(data.song, cache);
+      const song = link.includes("&") ? link.split("&")[0] : link;
+      const targetServer = await this.getServerFromData(0, null, cache);
+      const member = await this.getMemberFromData(1, null, cache);
+
+      if (!member?.voice?.channel) {
+        console.error("User is not in a voice channel or member data is invalid.");
         return this.callNextAction(cache);
       }
 
-      let player = client.manager.get(targetServer.id);
+      const searchResult = await searchSong(client, song, member);
+      if (!searchResult) return this.callNextAction(cache);
 
-      if (!player) {
-        player = client.manager.create({
-  		guildId: targetServer.id,
-  		textChannelId: cache.msg?.channel?.id || "",
-  		voiceChannelId: member.voice.channel.id,
-  		selfDeafen: true,
-  		volume: 10,
-		});
+      const player = await getOrCreatePlayer(client, targetServer, member, cache);
+      if (!player) return this.callNextAction(cache);
 
-
-        // Apply optimized settings if MagmaStream is available
-        if (player.node?.options) {
-          player.node.options.transport = "magma";
-          player.node.options.bufferDuration = 400;
-          player.node.options.smoothTransition = true;
-        }
-      } else {
-        // Update channels directly on player object
-        if (cache.msg?.channel?.id) {
-          player.textChannel = cache.msg.channel.id;
-        }
-        player.voiceChannel = member.voice.channel.id;
-      }
-
-      await player.connect();
-
-      // Initialize queue string if it doesn't exist
-      if (!player.queue.string) {
-        player.queue.string = "";
-      }
-
-      const addTrackToQueue = (track) => {
-        if (queuePosition === "start") {
-          player.queue.unshift(track);
-        } else {
-          player.queue.add(track);
-        }
-      };
-
-      // Handle playlist
-      if (res.loadType === "playlist") {
-        const safeUrl = song.replace(/[<>]/g, ''); // Remove < > from URL
-        player.queue.string += `Playlist: [${res.playlist.name}](${safeUrl})\n`;
-        res.playlist.tracks.forEach(addTrackToQueue);
-      } else {
-        // Handle single track
-        const track = res.tracks[0];
-        const safeUrl = track.uri.replace(/[<>]/g, ''); // Remove < > from URL
-        player.queue.string += `[${track.title}](${safeUrl})\n`;
-        addTrackToQueue(track);
-      }
-
-      if (queuePosition === "instant") {
-        player.queue.shift();
-        // Small buffer delay
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        await player.play(res.tracks[0]);
-      } else if (!player.playing && !player.paused) {
-        // Small buffer delay
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        await player.play();
-      }
+      await handleQueueAndPlay(player, searchResult, data.queuePosition, song);
 
     } catch (error) {
       console.error("Error in playMusic action:", error);
@@ -131,5 +175,6 @@ module.exports = {
 
     this.callNextAction(cache);
   },
+
   mod() {},
 };
