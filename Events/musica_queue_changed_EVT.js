@@ -46,6 +46,9 @@ module.exports = {
 
     DBM.Events.queueChange = function queueChange(player, oldQueue, newQueue) {
       if (!Bot.$evts['queue change']) return;
+      
+      // Check if player is valid and has a guildId
+      if (!player || !player.guildId) return;
 
       const server = Bot.bot.guilds.cache.get(player.guildId);
       if (!server) return;
@@ -80,7 +83,8 @@ module.exports = {
       const initManager = () => {
         if (Bot.bot.manager) {
           Bot.bot.manager.on(ManagerEventTypes.PlayerStateUpdate, (oldState, newState, { changeType: type, details }) => {
-            if (type === PlayerStateEventTypes.QueueChange) {
+            // Check if newState and guildId exist before proceeding
+            if (type === PlayerStateEventTypes.QueueChange && newState && newState.guildId) {
               const guildId = newState.guildId;
               
               // Clear existing timeout
@@ -97,6 +101,21 @@ module.exports = {
                 DBM.Events.queueChange(newState, details.previousQueue, details.currentQueue);
                 delete queueChangeTimeouts[guildId];
               }, delay);
+            }
+            // Handle the case when a player is being destroyed or queue cleared
+            else if (type === PlayerStateEventTypes.QueueChange && (!newState || !newState.guildId) && oldState && oldState.guildId) {
+              const guildId = oldState.guildId;
+              
+              // Clear existing timeout
+              if (queueChangeTimeouts[guildId]) {
+                clearTimeout(queueChangeTimeouts[guildId]);
+              }
+              
+              // Use oldState in this case since newState is invalid
+              queueChangeTimeouts[guildId] = setTimeout(() => {
+                DBM.Events.queueChange(oldState, details.previousQueue, details.currentQueue);
+                delete queueChangeTimeouts[guildId];
+              }, 100);
             }
           });
         } else {
