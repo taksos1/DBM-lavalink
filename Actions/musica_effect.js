@@ -3,7 +3,7 @@ module.exports = {
   displayName: "Apply Audio Filter",
   section: "Lavalink",
   meta: {
-    version: "2.1.7",
+    version: "2.8.4",
     preciseCheck: true,
     author: "Assistant",
   },
@@ -12,500 +12,229 @@ module.exports = {
     return `Apply ${data.filter} filter`;
   },
 
-  fields: ["filter", "value"],
-  
-  html() {
+  fields: ["filter", "value", "level"],
+
+  html(isEvent, data) {
     return `
-      <div class="audio-filter-container">
-        <div class="filter-card">
-          <h3 class="filter-title">Audio Filter Settings</h3>
-          
-          <div class="form-group">
-            <label for="filter" class="form-label">Filter Type:</label>
-            <select 
-              id="filter" 
-              class="form-select" 
-              onchange="glob.onFilterChange(this)"
-              aria-label="Select audio filter type"
-            >
-              <optgroup label="Basic Filters">
-                <option value="bassboost">Bass Boost</option>
-                <option value="soft">Soft</option>
-                <option value="pop">Pop</option>
-                <option value="treble">Treble Bass</option>
-                <option value="electronic">Electronic</option>
-              </optgroup>
+      <div>
+        <div style="padding: 16px; background: #2c2f33; border-radius: 8px;">
+          <h3 style="color: #fff; text-align: center;">Audio Filter Settings</h3>
+          <label style="color: #fff;">Filter Type:</label>
+          <select id="filter" onchange="glob.onFilterChange(this)" style="width: 100%; padding: 8px; background: #36393f; color: #fff; border: 1px solid #4a4d52;">
+            <option value="bassboost">Bass Boost</option>
+            <option value="soft">Soft</option>
+            <option value="pop">Pop</option>
+            <option value="treblebass">Treble Bass</option>
+            <option value="electronic">Electronic</option>
+            <option value="radio">Radio</option>
+            <option value="vaporwave">Vaporwave</option>
+            <option value="tv">TV</option>
+            <option value="distortion">Distortion</option>
+            <option value="karaoke">Karaoke</option>
+            <option value="rotation">Rotation</option>
+            <option value="timescale">Timescale</option>
+            <option value="vibrato">Vibrato</option>
+            <option value="tremolo">Tremolo</option>
+            <option value="nightcore">Nightcore</option>
+            <option value="8d">8D Audio</option>
+            <option value="chipmunk">Chipmunk</option>
+            <option value="darthvader">Darth Vader</option>
+            <option value="clear">Clear Filters</option>
+            <option value="custom">Custom</option>
+          </select>
 
-              <optgroup label="Special Effects">
-                <option value="radio">Radio</option>
-                <option value="vaporwave">Vaporwave</option>
-                <option value="tv">TV</option>
-                <option value="distortion">Distortion</option>
-                <option value="karaoke">Karaoke</option>
-                <option value="rotation">Rotation</option>
-                <option value="timescale">Timescale</option>
-                <option value="vibrato">Vibrato</option>
-              </optgroup>
-
-              <optgroup label="Voice Effects">
-                <option value="china">China</option>
-                <option value="chipmunk">Chipmunk</option>
-                <option value="darthvader">Darth Vader</option>
-                <option value="nightcore">Nightcore</option>
-              </optgroup>
-
-              <optgroup label="Time Effects">
-                <option value="slowmo">Slowmo</option>
-                <option value="daycore">Daycore</option>
-              </optgroup>
-
-              <optgroup label="Other Effects">
-                <option value="tremolo">Tremolo</option>
-                <option value="earrape">Earrape</option>
-                <option value="eightD">8D</option>
-                <option value="party">Party</option>
-              </optgroup>
-
-              <optgroup label="Control">
-                <option value="clear">Clear Filters</option>
-                <option value="custom">Custom</option>
-              </optgroup>
-            </select>
+          <div id="levelContainer" style="display: none; margin-top: 10px;">
+            <label style="color: #fff;">Bass Boost Level:</label>
+            <input id="level" type="text" placeholder="1-10, Insane, Extreme, Max, etc." value="5" style="width: 100%; padding: 8px; background: #36393f; color: #fff;">
+            <div style="color: #aaa; margin-top: 5px; font-size: 12px;">
+              You can use numbers 1-10 or presets like "Insane", "Extreme", "Max", "Hard", "Medium", "Soft"
+            </div>
           </div>
 
-          <div id="valueContainer" class="form-group" style="display: none;">
-            <label for="value" class="form-label">Custom Filter JSON:</label>
-            <input 
-              id="value" 
-              class="form-input"
-              type="text" 
-              placeholder='{"equalizer":[{"band":0,"gain":0.2}]}'
-              aria-label="Custom filter JSON configuration"
-            />
-            <small class="help-text">Enter a valid JSON configuration for custom filter settings</small>
+          <div id="valueContainer" style="display: none; margin-top: 10px;">
+            <label style="color: #fff;">Custom Filter JSON:</label>
+            <input id="value" type="text" placeholder='{"equalizer":[{"band":0,"gain":0.2}]}' style="width: 100%; padding: 8px; background: #36393f; color: #fff;">
           </div>
         </div>
-
-        <style>
-          .audio-filter-container {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            padding: 16px;
-          }
-
-          .filter-card {
-            background: #2c2f33;
-            border-radius: 8px;
-            padding: 16px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-          }
-
-          .filter-title {
-            color: #ffffff;
-            text-align: center;
-            margin: 0 0 16px 0;
-            font-size: 1.25rem;
-            font-weight: 600;
-          }
-
-          .form-group {
-            margin-bottom: 16px;
-          }
-
-          .form-label {
-            display: block;
-            color: #ffffff;
-            font-weight: 600;
-            margin-bottom: 8px;
-          }
-
-          .form-select,
-          .form-input {
-            width: 100%;
-            padding: 8px 12px;
-            border-radius: 4px;
-            border: 1px solid #4a4d52;
-            background: #36393f;
-            color: #ffffff;
-            font-size: 14px;
-            transition: border-color 0.2s, box-shadow 0.2s;
-          }
-
-          .form-select:hover,
-          .form-input:hover {
-            border-color: #7289da;
-          }
-
-          .form-select:focus,
-          .form-input:focus {
-            outline: none;
-            border-color: #7289da;
-            box-shadow: 0 0 0 2px rgba(114, 137, 218, 0.3);
-          }
-
-          .help-text {
-            display: block;
-            color: #99aab5;
-            font-size: 12px;
-            margin-top: 4px;
-          }
-
-          optgroup {
-            color: #99aab5;
-            font-weight: 600;
-          }
-
-          option {
-            color: #ffffff;
-            padding: 4px;
-          }
-        </style>
       </div>
     `;
   },
 
   init() {
-    const { glob } = this;
+    const { glob, document } = this;
     glob.onFilterChange = function (event) {
-      const value = document.getElementById('valueContainer');
-      value.style.display = event.value === 'custom' ? null : 'none';
+      document.getElementById('valueContainer').style.display = event.value === 'custom' ? 'block' : 'none';
+      document.getElementById('levelContainer').style.display = event.value === 'bassboost' ? 'block' : 'none';
     };
+    
+    // Initialize the display based on default selection
+    setTimeout(() => {
+      const filterSelect = document.getElementById('filter');
+      if (filterSelect) glob.onFilterChange(filterSelect);
+    }, 100);
   },
 
   async action(cache) {
     const data = cache.actions[cache.index];
     const client = this.getDBM().Bot.bot;
     const targetServer = await this.getServerFromData(0, null, cache);
-
-    if (!client?.manager) {
-      console.error("Lavalink manager not found!");
-      return this.callNextAction(cache);
-    }
+    if (!client?.manager || !targetServer) return this.callNextAction(cache);
 
     const player = client.manager.get(targetServer.id);
-    if (!player) {
-      console.error("No active player found!");
-      return this.callNextAction(cache);
-    }
+    if (!player) return this.callNextAction(cache);
 
     const filter = this.evalMessage(data.filter, cache);
     const value = this.evalMessage(data.value, cache);
+    let level = this.evalMessage(data.level, cache);
 
     try {
-      // Store the current position to resume from same position after filter change
-      const currentPosition = player.position || 0;
-      
-      // Function to safely get equalizer settings
-      const getPlayerEqualizer = () => {
-        try {
-          if (player.filters && player.filters.options && Array.isArray(player.filters.options.equalizer)) {
-            return player.filters.options.equalizer;
-          }
-          return []; // Return empty array if no equalizer is found
-        } catch (err) {
-          console.log("Could not access equalizer settings, using defaults");
-          return [];
-        }
+      // Map of filter names to their corresponding method names (if different)
+      const filterMethodMap = {
+        "treblebass": "trebleBass",
+        "distortion": "distort",
+        "8d": "eightD"
       };
       
-      // Function to send direct node update for faster filter application
-      const sendDirectFilterUpdate = async (filterData) => {
-        try {
-          if (player.node && typeof player.node.send === 'function') {
-            // Send filter update (primary method)
-            await player.node.send({
-              op: 'filters',
-              guildId: targetServer.id,
-              ...filterData
-            });
-            
-            // Emit filter change event for other parts of the app
-            client.emit('lavalinkFilterUpdate', targetServer.id, filter, filterData);
-          }
-        } catch (err) {
-          console.error("Error sending direct filter update:", err);
-        }
-      };
+      // Get the correct method name
+      const methodName = filterMethodMap[filter] || filter;
       
-      let filterData = {};
-      
+      // Apply the selected filter
       switch (filter) {
         case 'clear':
-          // Clears all applied filters on the player
-          if (player.filters && typeof player.filters.clearFilters === 'function') {
-            await player.filters.clearFilters();
+          // Try to find the most common clear filter method
+          if (player.filters) {
+            if (typeof player.filters.clearFilters === 'function') {
+              await player.filters.clearFilters();
+            } else if (typeof player.filters.clear === 'function') {
+              await player.filters.clear();
+            } else {
+              // Reset filters by applying an empty set of EQ bands
+              const emptyEQ = Array(15).fill(0).map((_, i) => ({ band: i, gain: 0 }));
+              if (typeof player.filters.setEqualizer === 'function') {
+                await player.filters.setEqualizer(emptyEQ);
+              }
+              
+              // Reset all other filter settings
+              const resetProperties = [
+                'timescale', 'tremolo', 'vibrato', 'rotation', 'distortion', 
+                'channelMix', 'lowPass', 'karaoke'
+              ];
+              
+              resetProperties.forEach(prop => {
+                if (player.filters[prop] !== undefined) {
+                  player.filters[prop] = null;
+                }
+              });
+              
+              // Apply changes
+              if (typeof player.filters.apply === 'function') {
+                await player.filters.apply();
+              }
+            }
           }
-          filterData = {}; // Empty filter data for direct update
+          console.log("Cleared all audio filters");
           break;
-
+          
         case 'custom':
           try {
-            // Applying custom filter from JSON input
-            const customFilters = JSON.parse(value);
-            if (player.filters && typeof player.filters.setEqualizer === 'function') {
-              await player.filters.setEqualizer(customFilters.equalizer || []);
+            const filterObject = JSON.parse(value);
+            
+            if (player.filters) {
+              // Apply each property from the custom filter
+              Object.keys(filterObject).forEach(key => {
+                player.filters[key] = filterObject[key];
+              });
+              
+              // Apply the filter changes
+              if (typeof player.filters.apply === 'function') {
+                await player.filters.apply();
+              }
             }
-            filterData = customFilters; // Use the custom filter data
+            console.log("Applied custom filter");
           } catch (err) {
-            console.error('Invalid custom filter JSON:', err);
+            console.error('Failed to parse or apply custom filter:', err);
           }
           break;
-
-        case 'distortion':
-          // Apply distortion effect
-          const distortionOptions = { distortion: { level: 0.5 } };
-          if (player.filters && typeof player.filters.setDistortion === 'function') {
-            await player.filters.setDistortion(distortionOptions);
-          }
-          filterData = distortionOptions;
-          break;
-
-        case 'karaoke':
-          // Apply karaoke effect
-          const karaokeOptions = { karaoke: { level: 1.0, monoLevel: 1.0, filterBand: 0.5 } };
-          if (player.filters && typeof player.filters.setKaraoke === 'function') {
-            await player.filters.setKaraoke(karaokeOptions.karaoke);
-          }
-          filterData = karaokeOptions;
-          break;
-
-        case 'rotation':
-          // Apply rotation effect
-          const rotationOptions = { rotation: { rotationHz: 1.0 } };
-          if (player.filters && typeof player.filters.setRotation === 'function') {
-            await player.filters.setRotation(rotationOptions.rotation);
-          }
-          filterData = rotationOptions;
-          break;
-
-        case 'timescale':
-          // Apply timescale effect (speed, pitch, rate)
-          const timescaleOptions = { timescale: { speed: 1.0, pitch: 1.0, rate: 1.0 } };
-          if (player.filters && typeof player.filters.setTimescale === 'function') {
-            await player.filters.setTimescale(timescaleOptions.timescale);
-          }
-          filterData = timescaleOptions;
-          break;
-
-        case 'vibrato':
-          // Apply vibrato effect
-          const vibratoOptions = { vibrato: { frequency: 5.0, depth: 0.5 } };
-          if (player.filters && typeof player.filters.setVibrato === 'function') {
-            await player.filters.setVibrato(vibratoOptions.vibrato);
-          }
-          filterData = vibratoOptions;
-          break;
-
-        case 'slowmo':
-          // Apply slow-motion effect
-          if (player.filters && typeof player.filters.slowmo === 'function') {
-            await player.filters.slowmo();
-          }
-          filterData = { timescale: { speed: 0.5, pitch: 0.8, rate: 0.8 } };
-          break;
-
-        case 'tremolo':
-          // Apply tremolo effect
-          if (player.filters && typeof player.filters.tremolo === 'function') {
-            await player.filters.tremolo();
-          }
-          filterData = { tremolo: { depth: 0.5, frequency: 4.0 } };
-          break;
-
+          
         case 'bassboost':
-          // Apply bass boost effect
-          if (player.filters && typeof player.filters.bassBoost === 'function') {
-            await player.filters.bassBoost();
-          }
-          // Default bassboost equalizer settings
-          filterData = {
-            equalizer: [
-              { band: 0, gain: 0.3 },
-              { band: 1, gain: 0.25 },
-              { band: 2, gain: 0.2 },
-              { band: 3, gain: 0.1 }
-            ]
-          };
-          break;
-
-        case 'soft':
-          // Apply soft equalizer effect
-          if (player.filters && typeof player.filters.soft === 'function') {
-            await player.filters.soft();
-          }
-          filterData = { equalizer: getPlayerEqualizer() };
-          break;
-
-        case 'pop':
-          // Apply pop effect
-          if (player.filters && typeof player.filters.pop === 'function') {
-            await player.filters.pop();
-          }
-          filterData = { equalizer: getPlayerEqualizer() };
-          break;
-
-        case 'treble':
-          // Apply treble and bass boost effect
-          if (player.filters && typeof player.filters.trebleBass === 'function') {
-            await player.filters.trebleBass();
-          }
-          filterData = { equalizer: getPlayerEqualizer() };
-          break;
-
-        case 'tv':
-          // Apply TV effect
-          if (player.filters && typeof player.filters.tv === 'function') {
-            await player.filters.tv();
-          }
-          filterData = { 
-            equalizer: getPlayerEqualizer(),
-            tremolo: { depth: 0.3, frequency: 14 }
-          };
-          break;
-
-        case 'vaporwave':
-          // Apply vaporwave effect
-          if (player.filters && typeof player.filters.vaporwave === 'function') {
-            await player.filters.vaporwave();
-          }
-          filterData = { 
-            timescale: { pitch: 0.8, speed: 0.8 },
-            equalizer: getPlayerEqualizer()
-          };
-          break;
-
-        case 'china':
-          // Apply china effect
-          if (player.filters && typeof player.filters.china === 'function') {
-            await player.filters.china();
-          }
-          filterData = { equalizer: getPlayerEqualizer() };
-          break;
-
-        case 'chipmunk':
-          // Apply chipmunk effect
-          if (player.filters && typeof player.filters.chipmunk === 'function') {
-            await player.filters.chipmunk();
-          }
-          filterData = { timescale: { pitch: 1.5, speed: 1.5, rate: 1 } };
-          break;
-
-        case 'darthvader':
-          // Apply darthvader effect
-          if (player.filters && typeof player.filters.darthvader === 'function') {
-            await player.filters.darthvader();
-          }
-          filterData = { timescale: { pitch: 0.5, speed: 0.8, rate: 1 } };
-          break;
-
-        case 'daycore':
-          // Apply daycore effect
-          if (player.filters && typeof player.filters.daycore === 'function') {
-            await player.filters.daycore();
-          }
-          filterData = { timescale: { pitch: 0.8, speed: 0.8, rate: 1 } };
-          break;
-
-        case 'earrape':
-          // Apply earrape effect
-          if (player.filters && typeof player.filters.earrape === 'function') {
-            await player.filters.earrape();
-          }
-          filterData = { volume: 5.0 };
-          break;
-
-        case 'eightD':
-          // Apply 8D audio effect
-          if (player.filters && typeof player.filters.eightD === 'function') {
-            await player.filters.eightD();
-          }
-          filterData = { rotation: { rotationHz: 0.2 } };
-          break;
-
-        case 'nightcore':
-          // Apply nightcore effect
-          if (player.filters && typeof player.filters.nightcore === 'function') {
-            await player.filters.nightcore();
-          }
-          filterData = { timescale: { pitch: 1.2, speed: 1.3, rate: 1 } };
-          break;
-
-        case 'party':
-          // Apply party effect
-          if (player.filters && typeof player.filters.party === 'function') {
-            await player.filters.party();
-          }
-          filterData = { equalizer: getPlayerEqualizer() };
-          break;
-
-        case 'radio':
-          // Apply radio effect
-          if (player.filters && typeof player.filters.radio === 'function') {
-            await player.filters.radio();
-          }
-          filterData = { 
-            equalizer: getPlayerEqualizer(),
-            timescale: { pitch: 1.1, speed: 1, rate: 1 }
-          };
-          break;
-
-        default:
-          // Apply predefined filter
-          if (player.filters && typeof player.filters.setFilter === 'function') {
-            await player.filters.setFilter(filter);
-          }
-          filterData = player.filters?.options || {};
-          break;
-      }
-
-      // Send direct filter update command to node
-      await sendDirectFilterUpdate(filterData);
-      
-      // Additional approach: Send multiple commands to ensure filter is applied
-      try {
-        // Force apply filter by setting it directly through the node connection
-        if (player.node && typeof player.node.send === 'function') {
-          // Send a filters reset command first
-          await player.node.send({
-            op: 'filters',
-            guildId: targetServer.id
-          });
-          
-          // Wait a tiny amount of time
-          await new Promise(resolve => setTimeout(resolve, 10));
-          
-          // Then send the new filter
-          await player.node.send({
-            op: 'filters',
-            guildId: targetServer.id,
-            ...filterData
-          });
-        }
-      } catch (err) {
-        // Ignore errors in this additional approach
-      }
-      
-      // Force seek to current position to apply filters immediately
-      if (currentPosition > 0 && player.playing) {
-        try {
-          await player.seek(currentPosition);
-          
-          // Some implementations might need a slight offset to trigger a refresh
-          setTimeout(async () => {
-            if (player.playing) {
-              await player.seek(currentPosition + 1);
+          if (player.filters) {
+            // Parse level input - can be number or string preset
+            let bassGain = 0.5; // Default medium level
+            let bassMultiplier = 1.0;
+            
+            // Handle preset names
+            const presets = {
+              'soft': { gain: 0.3, multiplier: 1.0 },
+              'medium': { gain: 0.5, multiplier: 1.0 },
+              'hard': { gain: 0.7, multiplier: 1.0 },
+              'insane': { gain: 0.8, multiplier: 1.2 },
+              'extreme': { gain: 0.9, multiplier: 1.4 },
+              'max': { gain: 1.0, multiplier: 1.6 }
+            };
+            
+            if (typeof level === 'string') {
+              // Try to parse as number first
+              const numLevel = parseFloat(level);
+              
+              if (!isNaN(numLevel)) {
+                // It's a number as string, scale 0-10 to 0-1.0
+                bassGain = Math.min(Math.max(numLevel / 10, 0), 1);
+              } else {
+                // Check for preset names
+                const presetName = level.toLowerCase().trim();
+                if (presets[presetName]) {
+                  bassGain = presets[presetName].gain;
+                  bassMultiplier = presets[presetName].multiplier;
+                }
+              }
+            } else if (typeof level === 'number') {
+              bassGain = Math.min(Math.max(level / 10, 0), 1);
             }
-          }, 50);
-        } catch (err) {
-          console.error("Error during seek operation:", err);
-        }
+            
+            // Enhanced bass boost with more dramatic effect
+            const bassEQ = [
+              { band: 0, gain: bassGain * bassMultiplier }, // Sub-bass
+              { band: 1, gain: bassGain * bassMultiplier }, // Bass
+              { band: 2, gain: bassGain * 0.8 * bassMultiplier }, // Upper bass
+              { band: 3, gain: bassGain * 0.6 * bassMultiplier } // Lower mid-range
+            ];
+            
+            // Add slight boost to low-mids for a fuller sound
+            if (bassGain > 0.5) {
+              bassEQ.push({ band: 4, gain: bassGain * 0.3 * bassMultiplier });
+            }
+            
+            // Apply the equalizer
+            if (typeof player.filters.setEqualizer === 'function') {
+              await player.filters.setEqualizer(bassEQ);
+            } else {
+              // Alternatively, set the equalizer property directly
+              player.filters.equalizer = bassEQ;
+              
+              // Apply changes
+              if (typeof player.filters.apply === 'function') {
+                await player.filters.apply();
+              }
+            }
+            console.log(`Applied bassboost filter with gain: ${bassGain} and multiplier: ${bassMultiplier}`);
+          }
+          break;
+          
+        default:
+          if (player.filters && typeof player.filters[methodName] === 'function') {
+            // Call the filter method
+            await player.filters[methodName](true);
+            console.log(`Applied ${filter} filter`);
+          } else {
+            console.error(`Filter method ${methodName} not found`);
+          }
+          break;
       }
-
-      console.log(`Applied ${filter} filter to player in guild ${targetServer.id}`);
     } catch (err) {
       console.error('Failed to apply audio filter:', err);
     }
 
-    this.callNextAction(cache); // Continue to the next action
+    this.callNextAction(cache);
   },
 
   mod() {}

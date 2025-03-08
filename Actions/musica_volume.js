@@ -32,9 +32,6 @@ module.exports = {
     const lavalinkPlayer = client.manager?.get(targetServer.id);
     if (lavalinkPlayer) {
       try {
-        // Store current position to help force update
-        const currentPosition = lavalinkPlayer.position;
-        
         // 1. Set volume through the player API
         await lavalinkPlayer.setVolume(volume);
         
@@ -56,28 +53,15 @@ module.exports = {
           });
         }
         
-        // 3. Use the "seek trick" to force audio processing update
-        if (currentPosition > 0) {
-          // Seek to current position to force audio processing update
-          await lavalinkPlayer.seek(currentPosition);
-          
-          // Some implementations might need a slight offset to trigger a refresh
-          setTimeout(async () => {
-            if (lavalinkPlayer.playing) {
-              await lavalinkPlayer.seek(currentPosition + 1);
-            }
-          }, 50);
-        }
-        
-        // 4. Update player options directly if possible (implementation dependent)
+        // 3. Update player options directly if possible (implementation dependent)
         if (lavalinkPlayer.options) {
           lavalinkPlayer.options.volume = volume;
         }
         
-        // 5. Emit events for other components
+        // 4. Emit events for other components
         client.emit('lavalinkVolumeUpdate', targetServer.id, volume);
         
-        // 6. Try to update the track itself if possible
+        // 5. Try to update the track itself if possible
         if (lavalinkPlayer.track && typeof lavalinkPlayer.updateTrack === 'function') {
           await lavalinkPlayer.updateTrack();
         }
